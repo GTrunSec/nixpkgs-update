@@ -16,7 +16,7 @@ import qualified Nix
 import qualified Options.Applicative as O
 import System.Posix.Env (setEnv)
 import Update (cveAll, cveReport, sourceGithubAll, updateAll)
-import Utils (Options(..), UpdateEnv(..), setupNixpkgs)
+import Utils (Options(..), UpdateEnv(..), setupNixpkgs, setupNixpkgsNoHub)
 
 default (T.Text)
 
@@ -117,11 +117,11 @@ main = do
         Right t -> T.putStrLn t
     UpdateVulnDB -> withVulnDB $ \_conn -> pure ()
     CheckAllVulnerable -> do
-      setupNixpkgs undefined
+      setupNixpkgsNoHub
       updates <- T.readFile "packages-to-update.txt"
       cveAll (Options undefined undefined) updates
     CheckVulnerable productID oldVersion newVersion -> do
-      setupNixpkgs undefined
+      setupNixpkgsNoHub
       report <-
         cveReport
           (UpdateEnv productID oldVersion newVersion (Options False undefined))

@@ -11,6 +11,7 @@ module Utils
   , VersionMatcher(..)
   , UpdateEnv(..)
   , setupNixpkgs
+  , setupNixpkgsNoHub
   , tRead
   , parseUpdates
   , overwriteErrorT
@@ -157,17 +158,33 @@ setupNixpkgs :: Text -> IO ()
 setupNixpkgs githubt = do
   fp <- getUserCacheDir "nixpkgs"
   exists <- doesDirectoryExist fp
-  unless exists $ do
-    proc "hub" ["clone", "nixpkgs", fp] & -- requires that user has forked nixpkgs
-      System.Process.Typed.setEnv
-        [("GITHUB_TOKEN" :: String, githubt & T.unpack)] &
-      runProcess_
-    setCurrentDirectory fp
-    shell "git remote add upstream https://github.com/NixOS/nixpkgs" &
-      runProcess_
-    shell "git fetch upstream" & runProcess_
+  unless exists $ setupGitRepo githubt fp
   setCurrentDirectory fp
   setEnv "NIX_PATH" ("nixpkgs=" <> fp) True
+
+setupGitRepo :: Text -> FilePath -> IO ()
+setupGitRepo token filePath = do
+  proc "hub" ["clone", "nixpkgs", filePath] & -- requires that user has forked nixpkgs
+    System.Process.Typed.setEnv [("GITHUB_TOKEN" :: String, token & T.unpack)] &
+    runProcess_
+  setCurrentDirectory filePath
+  shell "git remote add upstream https://github.com/NixOS/nixpkgs" & runProcess_
+  shell "git fetch upstream" & runProcess_
+
+setupNixpkgsNoHub :: IO ()
+setupNixpkgsNoHub = do
+  fp <- getUserCacheDir "nixpkgs-no-hub"
+  exists <- doesDirectoryExist fp
+  unless exists $ setupGitRepoNoHub fp
+  setCurrentDirectory fp
+  setEnv "NIX_PATH" ("nixpkgs=" <> fp) True
+
+setupGitRepoNoHub :: FilePath -> IO ()
+setupGitRepoNoHub filePath = do
+  proc "git" ["clone", "git@github.com:nixos/nixpkgs", filePath] & runProcess_
+  setCurrentDirectory filePath
+  shell "git remote add upstream https://github.com/NixOS/nixpkgs" & runProcess_
+  shell "git fetch upstream" & runProcess_
 
 overwriteErrorT :: MonadIO m => Text -> ExceptT Text m a -> ExceptT Text m a
 overwriteErrorT t = fmapLT (const t)
