@@ -29,6 +29,7 @@ default-extensions:
   - TypeApplications
   - TypeFamilies
   - TypeOperators
+  - BlockArguments
 
 dependencies:
   - aeson
@@ -71,15 +72,29 @@ dependencies:
   - xdg-basedir
   - zlib
 
+library:
+  source-dirs: src
+
 executables:
   nixpkgs-update:
     source-dirs: src
     main: Main.hs
 
 tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - hspec
+      - hspec-discover
+      - doctest
+      - raw-strings-qq
+      - nixpkgs-update
   doctests:
     main: doctests.hs
     ghc-options: -threaded
     source-dirs: test
     dependencies:
       - doctest
+      - nixpkgs-update

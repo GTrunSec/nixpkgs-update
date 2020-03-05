@@ -13,6 +13,7 @@ module OurPrelude
     module Data.Bifunctor,
     module System.Process.Typed,
     module Polysemy,
+    module Polysemy.Error,
     Set,
     Text,
     Vector,
@@ -46,8 +47,10 @@ import Data.Vector (Vector)
 import Language.Haskell.TH.Quote
 import qualified NeatInterpolation
 import Polysemy
+import Polysemy.Error
 import System.Exit
 import System.Process.Typed
+import qualified Process as P
 
 interpolate :: QuasiQuoter
 interpolate = NeatInterpolation.text
@@ -76,6 +79,15 @@ ourReadProcessInterleaved_ ::
   ExceptT Text m Text
 ourReadProcessInterleaved_ =
   readProcessInterleaved_ >>> tryIOTextET >>> fmapRT bytestringToText
+
+
+ourReadProcessInterleaved_Sem ::
+  Members '[Process, Error Text] r =>
+  ProcessConfig stdin stdoutIgnored stderrIgnored ->
+  Sem r Text
+ourReadProcessInterleaved_Sem =
+  P.readInterleaved >>> fromExceptionSemVia tshow >>> fmap bytestringToText
+
 
 ourReadProcessInterleaved ::
   MonadIO m =>

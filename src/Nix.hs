@@ -1,6 +1,7 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module Nix
@@ -43,18 +44,28 @@ import Text.Parser.Combinators
 import Text.Parser.Token
 import Utils (UpdateEnv (..), nixBuildOptions, nixCommonOptions, overwriteErrorT, srcOrMain)
 import Prelude hiding (log)
-
+import qualified Process as P
 data Env = Env [(String, String)]
-
-data EvalOptions = EvalOptions Raw Env
 
 data Raw
   = Raw
   | NoRaw
 
+data EvalOptions = EvalOptions Raw Env
+
 rawOpt :: Raw -> [String]
 rawOpt Raw = ["--raw"]
 rawOpt NoRaw = []
+
+-- nixEvalETSem :: Member Process r =>
+--   EvalOptions ->
+--   Text ->
+--   Sem r Text
+-- nixEvalETSem (EvalOptions raw (Env env)) expr =
+--   ourReadProcessInterleaved_
+--     (setEnv env (proc "nix" (["eval", "-f", "."] <> rawOpt raw <> [T.unpack expr])))
+--     & fmapRT T.strip
+--     & overwriteErrorT ("nix eval failed for \"" <> expr <> "\"")
 
 nixEvalET :: MonadIO m => EvalOptions -> Text -> ExceptT Text m Text
 nixEvalET (EvalOptions raw (Env env)) expr =
